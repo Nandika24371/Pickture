@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 function CreateRoomScreen() {
   const navigate = useNavigate();
   const [roomName, setRoomName] = useState('');
   const [hostName, setHostName] = useState('');
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (!roomName.trim() || !hostName.trim()) {
       alert('Please fill in all fields');
       return;
@@ -14,22 +16,29 @@ function CreateRoomScreen() {
 
     // Generate a random 6-character room code
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // Store room data (in a real app, this would go to a backend)
+
+    const userId = crypto.randomUUID();
+
     const roomData = {
-      code: roomCode,
+      roomCode: roomCode,
       name: roomName,
-      host: hostName,
-      participants: [hostName]
+      users: [
+        { userId: userId, name: hostName }
+      ],
+      stage: "waiting",
+      moviePool: [],
+      swipes: {}
     };
-    
-    localStorage.setItem('currentRoom', JSON.stringify(roomData));
-    navigate(`/room/${roomCode}/waiting`);
+
+    // save to Firestore instead of localStorage
+    await setDoc(doc(db, "rooms", roomCode), roomData);
+
+    // Navigate with userId so we know who this user is
+    navigate(`/room/${roomCode}/waiting?uid=${userId}`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col p-6">
-      {/* Header */}
       <div className="flex items-center mb-8">
         <button
           onClick={() => navigate('/')}
@@ -40,7 +49,6 @@ function CreateRoomScreen() {
         <h1 className="text-2xl font-bold text-white ml-4">Create Room</h1>
       </div>
 
-      {/* Form Container */}
       <div className="flex-1 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl">
           <div className="space-y-6">

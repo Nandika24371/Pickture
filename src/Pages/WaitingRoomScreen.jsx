@@ -1,22 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { db } from "../firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 function WaitingRoomScreen() {
   const navigate = useNavigate();
   const { roomCode } = useParams();
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get("uid");
+
   const [participants, setParticipants] = useState([]);
   const [roomData, setRoomData] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
-    // Load room data
-    const storedRoom = localStorage.getItem('currentRoom');
-    if (storedRoom) {
-      const room = JSON.parse(storedRoom);
-      setRoomData(room);
-      setParticipants(room.participants || [room.host]);
-    }
-  }, []);
+    const roomRef = doc(db, "rooms", roomCode);
+
+    const unsubscribe = onSnapshot(roomRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setRoomData(data);
+        setParticipants(data.users || []);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [roomCode]);
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomCode);
@@ -25,13 +34,17 @@ function WaitingRoomScreen() {
   };
 
   const handleStartSession = () => {
-    navigate(`/room/${roomCode}/quiz`);
+    navigate(`/room/${roomCode}/quiz?uid=${userId}`);
   };
 
-  const isHost = roomData && localStorage.getItem('currentRoom');
+  // Host = first user in users array
+  const isHost =
+    participants.length > 0 &&
+    participants[0].userId === userId;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col p-6">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <button
@@ -77,15 +90,15 @@ function WaitingRoomScreen() {
         <div className="space-y-3">
           {participants.map((participant, index) => (
             <div
-              key={index}
+              key={participant.userId}
               className="flex items-center space-x-3 bg-gray-50 rounded-xl p-4"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
-                {participant.charAt(0).toUpperCase()}
+                {participant.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-800">
-                  {participant}
+                  {participant.name}
                   {index === 0 && (
                     <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
                       Host

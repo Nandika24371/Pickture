@@ -1,38 +1,54 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from "../firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 
 function JoinRoomScreen() {
   const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState('');
   const [userName, setUserName] = useState('');
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (!roomCode.trim() || !userName.trim()) {
       alert('Please fill in all fields');
       return;
     }
 
-    // In a real app, validate room code with backend
     const formattedCode = roomCode.trim().toUpperCase();
-    
-    // Store user data
-    const userData = {
-      name: userName,
-      roomCode: formattedCode
-    };
-    
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-    navigate(`/room/${formattedCode}/waiting`);
+
+    try {
+      const roomRef = doc(db, "rooms", formattedCode);
+      const roomSnap = await getDoc(roomRef);
+
+      if (!roomSnap.exists()) {
+        alert("Room not found!");
+        return;
+      }
+
+      const userId = crypto.randomUUID();
+
+      const currentUsers = roomSnap.data().users || [];
+
+      await updateDoc(roomRef, {
+        users: [...currentUsers, { userId, name: userName }]
+      });
+
+      navigate(`/room/${formattedCode}/waiting?uid=${userId}`);
+
+    } catch (err) {
+      console.error("Join error:", err);
+      alert("Something went wrong. Check console.");
+    }
   };
 
   const handleCodeChange = (e) => {
-    // Auto-capitalize and limit to 6 characters
     const value = e.target.value.toUpperCase().substring(0, 6);
     setRoomCode(value);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col p-6">
+      
       {/* Header */}
       <div className="flex items-center mb-8">
         <button
@@ -48,6 +64,7 @@ function JoinRoomScreen() {
       <div className="flex-1 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl">
           <div className="space-y-6">
+
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Room Code
@@ -84,6 +101,7 @@ function JoinRoomScreen() {
             >
               Join Room
             </button>
+
           </div>
         </div>
       </div>
