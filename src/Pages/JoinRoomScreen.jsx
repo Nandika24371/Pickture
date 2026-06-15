@@ -30,7 +30,8 @@ function JoinRoomScreen() {
       const currentUsers = roomSnap.data().users || [];
 
       await updateDoc(roomRef, {
-        users: [...currentUsers, { userId, name: userName }]
+        users: [...currentUsers, { userId, name: userName }],
+        lastActivity: Date.now()
       });
 
       navigate(`/room/${formattedCode}/waiting?uid=${userId}`);

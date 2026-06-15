@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { db } from "../firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 
 function WaitingRoomScreen() {
   const navigate = useNavigate();
@@ -19,8 +19,13 @@ function WaitingRoomScreen() {
     const unsubscribe = onSnapshot(roomRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
+
         setRoomData(data);
         setParticipants(data.users || []);
+
+        if (data.stage === "quiz") {
+          navigate(`/room/${roomCode}/quiz?uid=${userId}`);
+        }
       }
     });
 
@@ -33,8 +38,13 @@ function WaitingRoomScreen() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleStartSession = () => {
-    navigate(`/room/${roomCode}/quiz?uid=${userId}`);
+  const handleStartSession = async () => {
+    const roomRef = doc(db, "rooms", roomCode);
+
+    await updateDoc(roomRef, {
+      stage: "quiz",
+      lastActivity: Date.now()
+    });
   };
 
   // Host = first user in users array

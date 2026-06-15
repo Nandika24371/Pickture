@@ -27,7 +27,10 @@ function CreateRoomScreen() {
       ],
       stage: "waiting",
       moviePool: [],
-      swipes: {}
+      swipes: {},
+
+      createdAt: Date.now(),
+      lastActivity: Date.now()
     };
 
     // save to Firestore instead of localStorage
