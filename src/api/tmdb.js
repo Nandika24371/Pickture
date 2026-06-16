@@ -33,6 +33,22 @@ export async function searchMovie(title, year) {
   };
 }
 
+export async function getMovieDetails(tmdbId) {
+
+  const response = await fetch(
+    `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}`
+  );
+
+  const data = await response.json();
+
+  return {
+    runtime: data.runtime,
+    genreIds: data.genres?.map(
+      genre => genre.id
+    ) || []
+  };
+}
+
 export async function getWatchProviders(tmdbId) {
 
   const response = await fetch(

@@ -1,174 +1,148 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
-import { doc, getDoc, updateDoc} from "firebase/firestore";
-import {
-  signOut,
-  onAuthStateChanged
-} from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import Papa from "papaparse";
 import { useNavigate } from "react-router-dom";
-import {
-  searchMovie,
-  getWatchProviders
-} from "../api/tmdb";
+import { searchMovie, getWatchProviders, getMovieDetails } from "../api/tmdb";
 
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+
   const handleWatchlistUpload = (event) => {
-  const file = event.target.files[0];
+    const file = event.target.files[0];
+    if (!file) return;
+    setUploading(true);
 
-  Papa.parse(file, {
-    header: true,
-
-    complete: async (results) => {
-      const movies = results.data
-        .filter(movie => movie.Name);
-
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        const movies = results.data.filter((m) => m.Name);
         for (const movie of movies) {
-
-        const tmdbData =
-            await searchMovie(
-            movie.Name,
-            movie.Year
-            );
-
-        if (tmdbData) {
-
-        movie.tmdbId = tmdbData.tmdbId;
-
-        movie.posterPath =
-            tmdbData.posterPath;
-
-        movie.rating =
-            tmdbData.rating;
-
-        movie.providers =
-            await getWatchProviders(
-            tmdbData.tmdbId
-            );
+          const tmdbData = await searchMovie(movie.Name, movie.Year);
+          if (tmdbData) {
+            movie.tmdbId = tmdbData.tmdbId;
+            movie.posterPath = tmdbData.posterPath;
+            movie.rating = tmdbData.rating;
+            movie.providers = await getWatchProviders(tmdbData.tmdbId);
+            const details = await getMovieDetails(tmdbData.tmdbId);
+            movie.runtime = details.runtime;
+            movie.genreIds = details.genreIds;
+          }
         }
-        }
-
-      const currentUser = auth.currentUser;
-
-      await updateDoc(
-        doc(db, "users", currentUser.uid),
-        {
+        const currentUser = auth.currentUser;
+        await updateDoc(doc(db, "users", currentUser.uid), {
           watchlistMovies: movies,
-          watchlistCount: movies.length
-        }
-      );
-
-      window.location.reload();
-    }
-  });
-};
+          watchlistCount: movies.length,
+        });
+        setUploading(false);
+        window.location.reload();
+      },
+    });
+  };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-        auth,
-        async (currentUser) => {
-        if (!currentUser) return;
-
-        const userRef = doc(
-            db,
-            "users",
-            currentUser.uid
-        );
-
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-            setUserData(userSnap.data());
-        }
-        }
-    );
-
-    return () => unsubscribe();
-    }, []);
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) return;
+      const snap = await getDoc(doc(db, "users", currentUser.uid));
+      if (snap.exists()) setUserData(snap.data());
+    });
+    return () => unsub();
+  }, []);
 
   if (!userData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
+      <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "var(--cream-muted)", fontSize: "0.85rem", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          Loading…
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-4xl font-bold mb-6">
-        Welcome, {userData.name}
-      </h1>
+    <div className="page">
 
-      <div className="space-y-2 text-xl">
-        <p>
-            Movies Watched: {userData.watchedCount}
+      {/* Header */}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div className="eyebrow">Profile</div>
+        <h1 className="display-title">{userData.name}</h1>
+      </div>
+
+      {/* Stats */}
+      <div className="stats-row">
+        <div className="stat">
+          <div className="stat-number">{userData.watchedCount ?? 0}</div>
+          <div className="stat-label">Films Watched</div>
+        </div>
+        <div style={{ width: "1px", background: "var(--sage-border)", alignSelf: "stretch" }} />
+        <div className="stat">
+          <div className="stat-number">{userData.watchlistCount ?? 0}</div>
+          <div className="stat-label">On Watchlist</div>
+        </div>
+      </div>
+
+      <hr className="divider" />
+
+      {/* Import */}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div className="section-title">Import Watchlist</div>
+        <p style={{ color: "var(--cream-dim)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+          Upload a CSV from Letterboxd or a compatible export to populate your watchlist.
         </p>
 
-        <p>
-            Watchlist: {userData.watchlistCount}
-        </p>
-        </div>
-
-        <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-2">
-            Import Watchlist
-        </h2>
-
-        <input
-            type="file"
-            accept=".csv"
-            onChange={handleWatchlistUpload}
-        />
-        </div>
-
-
-        <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">
-            Watchlist
-        </h2>
-
-        <div className="mt-10">
-        <h2 className="text-2xl font-bold mb-4">
-            Watchlist Preview
-        </h2>
-
-        {userData.watchlistMovies
-            ?.slice(0, 10)
-            .map((movie, index) => (
-            <div
-                key={index}
-                className="border-b py-2"
-            >
-                {movie.Name} ({movie.Year})
+        <label className="upload-row" style={{ cursor: "pointer" }}>
+          <div>
+            <div style={{ fontSize: "0.85rem", color: "var(--cream)", fontWeight: 500 }}>
+              {uploading ? "Importing your films…" : "Choose a CSV file"}
             </div>
-        ))}
+            <div style={{ fontSize: "0.75rem", color: "var(--cream-muted)", marginTop: "0.2rem" }}>
+              {uploading ? "This may take a moment" : "Letterboxd watchlist export supported"}
+            </div>
+          </div>
+          <span className="btn btn-outline" style={{ pointerEvents: "none" }}>
+            {uploading ? "…" : "Browse"}
+          </span>
+          <input type="file" accept=".csv" onChange={handleWatchlistUpload} style={{ display: "none" }} />
+        </label>
+      </div>
+
+      <hr className="divider" />
+
+      {/* Watchlist preview */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+          <div className="section-title" style={{ marginBottom: 0 }}>Watchlist Preview</div>
+          <button className="btn btn-ghost" onClick={() => navigate("/watchlist")}>
+            See all →
+          </button>
         </div>
 
-        <button
-        onClick={() => navigate("/watchlist")}
-        className="mt-4 bg-purple-600 text-white px-4 py-2 rounded"
-        >
-        See All
-        </button>
-        </div>
-
-        <button
-        onClick={async () => {
-            await signOut(auth);
-            window.location.href = "/";
-        }}
-        className="mt-8 bg-red-500 text-white px-4 py-2 rounded"
-        >
-        Log Out
-        </button>
+        {userData.watchlistMovies?.length > 0 ? (
+          <div>
+            {userData.watchlistMovies.slice(0, 8).map((movie, i) => (
+              <div key={i} className="watchlist-preview-item">
+                <span style={{ color: "var(--cream)" }}>{movie.Name}</span>
+                <span style={{ color: "var(--cream-muted)", marginLeft: "0.5rem" }}>({movie.Year})</span>
+              </div>
+            ))}
+            {userData.watchlistMovies.length > 8 && (
+              <p style={{ fontSize: "0.78rem", color: "var(--cream-muted)", marginTop: "0.75rem" }}>
+                +{userData.watchlistMovies.length - 8} more films
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-icon">🎬</div>
+            <p className="empty-state-text">Your watchlist is empty. Import a CSV to get started.</p>
+          </div>
+        )}
+      </div>
     </div>
-    
   );
-  
 }
-
 
 export default ProfileScreen;

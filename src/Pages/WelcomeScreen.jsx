@@ -1,46 +1,42 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPopularMovies } from "../api/tmdb"; // <-- import the function
-
-import { db } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
 
 function WelcomeScreen() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col items-center justify-center p-6">
+    <div className="welcome-screen">
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 420 }}>
 
-      <div className="max-w-md w-full text-center">
+        <div className="eyebrow" style={{ marginBottom: "1.5rem" }}>Your cinema companion</div>
 
-        <h1 className="text-6xl mb-4">🎬</h1>
+        <h1 className="display-title" style={{ marginBottom: "1rem", fontSize: "3.8rem" }}>
+          Pick<span style={{ color: "var(--sage)" }}>ture</span>
+        </h1>
 
-        <h2 className="text-5xl font-bold text-white mb-4">
-          Pickture
-        </h2>
-
-        <p className="text-white/90 text-lg mb-12">
-          Find what to watch,
-          <br />
-          alone or together.
+        <p style={{ color: "var(--cream-dim)", fontSize: "1.05rem", lineHeight: 1.7, marginBottom: "3rem" }}>
+          Discover what to watch — from your own list,<br />alone or together.
         </p>
 
-        <button
-          onClick={() => navigate("/auth")}
-          className="w-full bg-white text-purple-600 font-semibold py-4 rounded-2xl shadow-lg"
-        >
-          Get Started
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <button
+            onClick={() => navigate("/auth", { state: { mode: "signup" } })}
+            className="btn btn-primary btn-large btn-full"
+          >
+            Create Account
+          </button>
 
-        <button
-          onClick={() => navigate("/auth")}
-          className="mt-6 text-white underline"
-        >
-          Already have an account? Log In
-        </button>
+          <button
+            onClick={() => navigate("/auth", { state: { mode: "login" } })}
+            className="btn btn-ghost btn-large btn-full"
+          >
+            Log In
+          </button>
+        </div>
 
+        <p style={{ marginTop: "3rem", fontSize: "0.72rem", color: "var(--cream-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          Your watchlist. Your picks.
+        </p>
       </div>
-
     </div>
   );
 }

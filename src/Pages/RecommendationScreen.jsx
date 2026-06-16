@@ -1,89 +1,220 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+const moodLabels = {
+  fun: "Something Fun",
+  serious: "Serious & Thoughtful",
+  emotional: "Emotional & Moving",
+  any: "Surprise Pick",
+};
+
+const lengthLabels = {
+  short: "Under 90 min",
+  medium: "90 – 120 min",
+  long: "Over 120 min",
+  any: "Any length",
+};
+
 function RecommendationScreen() {
   const location = useLocation();
-
+  const navigate = useNavigate();
   const [recommendation, setRecommendation] = useState(null);
+  const [allMovies, setAllMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const selectedPlatforms = location.state?.selectedPlatforms || [];
 
-  useEffect(() => {
-    async function generateRecommendation() {
-      const userRef = doc(
-        db,
-        "users",
-        auth.currentUser.uid
+  async function loadMovies() {
+    const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+    const movies = snap.data()?.watchlistMovies || [];
+    setAllMovies(movies);
+    return movies;
+  }
+
+  function pickRandom(movies) {
+    const {
+      length,
+      region,
+      selectedPlatforms = []
+    } = location.state || {};
+
+    let pool = [...movies];
+
+    // Length filtering
+
+    if (length === "short") {
+      pool = pool.filter(
+        m => m.runtime && m.runtime < 90
       );
-
-      const userSnap = await getDoc(userRef);
-
-      const movies =
-        userSnap.data().watchlistMovies || [];
-
-      if (movies.length === 0) {
-        return;
-      }
-
-      const randomMovie =
-        movies[
-          Math.floor(
-            Math.random() * movies.length
-          )
-        ];
-
-      setRecommendation(randomMovie);
     }
 
-    generateRecommendation();
+    if (length === "medium") {
+      pool = pool.filter(
+        m =>
+          m.runtime >= 90 &&
+          m.runtime <= 120
+      );
+    }
+
+    if (length === "long") {
+      pool = pool.filter(
+        m => m.runtime > 120
+      );
+    }
+
+    // Region filtering
+
+    if (region === "english") {
+      pool = pool.filter(
+        m => m.originalLanguage === "en"
+      );
+    }
+
+    if (region === "hindi") {
+      pool = pool.filter(
+        m => m.originalLanguage === "hi"
+      );
+    }
+
+    if (region === "eastAsian") {
+      pool = pool.filter(
+        m =>
+          ["ja", "ko", "zh", "th"]
+            .includes(m.originalLanguage)
+      );
+    }
+
+    if (region === "international") {
+      pool = pool.filter(
+        m => m.originalLanguage !== "en"
+      );
+    }
+
+    // Streaming platform filtering
+
+    if (selectedPlatforms.length > 0) {
+
+      pool = pool.filter(movie =>
+
+        selectedPlatforms.some(
+          platform =>
+            movie.providers?.includes(
+              platform
+            )
+        )
+
+      );
+
+    }
+
+    // Fallback
+
+    if (pool.length === 0) {
+      pool = movies;
+    }
+
+    return pool[
+      Math.floor(
+        Math.random() * pool.length
+      )
+    ];
+  }
+
+  useEffect(() => {
+    loadMovies().then(movies => {
+      if (movies.length > 0) setRecommendation(pickRandom(movies));
+      setLoading(false);
+    });
   }, []);
 
+  const handleSuggestAnother = () => {
+    if (allMovies.length > 0) setRecommendation(pickRandom(allMovies));
+  };
+
+  const { mood, length } = location.state || {};
+
   return (
-    <div className="min-h-screen p-6">
+    <div className="page" style={{ maxWidth: 600 }}>
 
-      <h1 className="text-4xl font-bold mb-6">
-        Your Recommendation
-      </h1>
+      <button className="back-btn" onClick={() => navigate("/solo-quiz")}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Change Preferences
+      </button>
 
-      <p className="mb-8">
-        Mood: {location.state?.mood}
-      </p>
+      <div className="eyebrow">Tonight's Pick</div>
+      <h1 className="display-title" style={{ marginBottom: "0.5rem" }}>We chose for you</h1>
 
-      {recommendation && (
-        <div className="max-w-md">
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "2.5rem", flexWrap: "wrap" }}>
+        {mood && <span className="badge">{moodLabels[mood] || mood}</span>}
+        {length && <span className="badge">{lengthLabels[length] || length}</span>}
+      </div>
 
+      {loading ? (
+        <div className="empty-state">
+          <p className="empty-state-text">Finding your film…</p>
+        </div>
+      ) : !recommendation ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">🎬</div>
+          <p className="empty-state-text">Your watchlist is empty. Add some films first.</p>
+          <button className="btn btn-outline" style={{ marginTop: "1rem" }} onClick={() => navigate("/profile")}>
+            Go to Profile
+          </button>
+        </div>
+      ) : (
+        <div className="fade-up" style={{ display: "flex", gap: "2rem", alignItems: "flex-start", flexWrap: "wrap" }}>
           <img
-            src={`https://image.tmdb.org/t/p/w300${recommendation.posterPath}`}
+            src={recommendation.posterPath
+              ? `https://image.tmdb.org/t/p/w300${recommendation.posterPath}`
+              : "https://via.placeholder.com/200x300/422838/AEB8A0?text=?"
+            }
             alt={recommendation.Name}
-            className="rounded-lg mb-4"
+            className="rec-poster"
           />
 
-          <h2 className="text-3xl font-bold">
-            {recommendation.Name}
-          </h2>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem", fontWeight: 700, color: "var(--cream)", lineHeight: 1.2, marginBottom: "0.35rem" }}>
+              {recommendation.Name}
+            </h2>
+            <p style={{ color: "var(--cream-muted)", fontSize: "0.85rem", marginBottom: "0.75rem" }}>{recommendation.Year}</p>
 
-          <p className="text-gray-500 mb-2">
-            {recommendation.Year}
-          </p>
+            {recommendation.rating && (
+              <p style={{ color: "var(--sage)", fontWeight: 600, marginBottom: "0.5rem" }}>
+                ★ {recommendation.rating.toFixed(1)}
+              </p>
+            )}
 
-          {recommendation.rating && (
-            <p className="mb-4">
-              ⭐ {recommendation.rating.toFixed(1)}
-            </p>
-          )}
+            {recommendation.runtime && (
+              <p style={{ fontSize: "0.8rem", color: "var(--cream-muted)", marginBottom: "1rem" }}>
+                {recommendation.runtime} min
+              </p>
+            )}
 
-          <button
-            onClick={() => {
-              window.location.reload();
-            }}
-            className="bg-purple-600 text-white px-4 py-2 rounded"
-          >
-            Suggest Another
-          </button>
+            {recommendation.providers?.length > 0 && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div style={{ fontSize: "0.72rem", color: "var(--cream-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.5rem" }}>Available on</div>
+                <div className="providers-row">
+                  {recommendation.providers.map(p => (
+                    <span key={p} className="badge">{p}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button className="btn btn-outline" onClick={handleSuggestAnother}>
+                Try Another
+              </button>
+              <button className="btn btn-ghost" onClick={() => navigate("/watchlist")}>
+                View Watchlist
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -6,120 +6,114 @@ import { useNavigate } from "react-router-dom";
 function WatchlistScreen() {
   const [movies, setMovies] = useState([]);
   const [selectedProviders, setSelectedProviders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const providers = [
-    "All",
-    ...new Set(movies.flatMap((movie) => movie.providers || [])),
-  ];
+
+  const allProviders = [...new Set(movies.flatMap((m) => m.providers || []))];
+  const providers = ["All", ...allProviders];
 
   function toggleProvider(provider) {
-    if (provider === "All") {
-      setSelectedProviders([]);
-      return;
-    }
-
-    if (selectedProviders.includes(provider)) {
-      setSelectedProviders(selectedProviders.filter((p) => p !== provider));
-    } else {
-      setSelectedProviders([...selectedProviders, provider]);
-    }
+    if (provider === "All") { setSelectedProviders([]); return; }
+    setSelectedProviders(prev =>
+      prev.includes(provider) ? prev.filter(p => p !== provider) : [...prev, provider]
+    );
   }
 
   useEffect(() => {
-    async function loadMovies() {
-      const userRef = doc(db, "users", auth.currentUser.uid);
-
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        setMovies(userSnap.data().watchlistMovies || []);
-      }
+    async function load() {
+      const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (snap.exists()) setMovies(snap.data().watchlistMovies || []);
+      setLoading(false);
     }
-
-    loadMovies();
+    load();
   }, []);
 
+  const filtered = movies.filter(m => {
+    if (selectedProviders.length === 0) return true;
+    return selectedProviders.some(p => m.providers?.includes(p));
+  });
+
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-4xl font-bold mb-6">Watchlist</h1>
+    <div className="page-wide">
 
-      <button
-        onClick={() => navigate("/solo-quiz")}
-        className="mb-6 bg-purple-600 text-white px-4 py-2 rounded"
-      >
-        What Should I Watch?
-      </button>
-
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {providers.map((provider) => (
-          <button
-            key={provider}
-            onClick={() => toggleProvider(provider)}
-            className={`
-        px-3 py-1 rounded
-        ${
-          (
-            provider === "All"
-              ? selectedProviders.length === 0
-              : selectedProviders.includes(provider)
-          )
-            ? "bg-purple-600 text-white"
-            : "bg-gray-200"
-        }
-        `}
-          >
-            {provider}(
-            {provider === "All"
-              ? movies.length
-              : movies.filter((movie) => movie.providers?.includes(provider))
-                  .length}
-            )
-          </button>
-        ))}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1rem" }}>
+        <div>
+          <div className="eyebrow">Collection</div>
+          <h1 className="display-title">Watchlist</h1>
+        </div>
+        <button className="btn btn-primary btn-large" onClick={() => navigate("/solo-quiz")}>
+          🎲 Pick for Me
+        </button>
       </div>
 
-      {movies
-        .filter((movie) => {
-          if (selectedProviders.length === 0) {
-            return true;
-          }
+      {/* Provider filters */}
+      {allProviders.length > 0 && (
+        <div className="filter-bar">
+          {providers.map(provider => {
+            const count = provider === "All"
+              ? movies.length
+              : movies.filter(m => m.providers?.includes(provider)).length;
+            return (
+              <button
+                key={provider}
+                className={`pill ${(provider === "All" ? selectedProviders.length === 0 : selectedProviders.includes(provider)) ? "active" : ""}`}
+                onClick={() => toggleProvider(provider)}
+              >
+                {provider} · {count}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-          return selectedProviders.some((provider) =>
-            movie.providers?.includes(provider)
-          );
-        })
-        .map((movie, index) => (
-          <div key={index} className="flex gap-4 border-b py-4">
-            <img
-              src={
-                movie.posterPath
+      {loading ? (
+        <div className="empty-state">
+          <p className="empty-state-text">Loading your watchlist…</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">🎬</div>
+          <p className="empty-state-text">
+            {movies.length === 0
+              ? "Your watchlist is empty. Import a CSV from your profile."
+              : "No films match the selected filters."}
+          </p>
+        </div>
+      ) : (
+        <div>
+          {filtered.map((movie, i) => (
+            <div key={i} className="movie-row">
+              <img
+                src={movie.posterPath
                   ? `https://image.tmdb.org/t/p/w200${movie.posterPath}`
-                  : "https://via.placeholder.com/100x150"
-              }
-              alt={movie.Name}
-              className="w-20 rounded-lg"
-            />
-
-            <div>
-              <h3 className="font-bold text-lg">{movie.Name}</h3>
-
-              <p className="text-gray-500">{movie.Year}</p>
-
-              {movie.rating && <p>⭐ {movie.rating.toFixed(1)}</p>}
-
-              <div className="flex flex-wrap gap-2 mt-2">
-                {movie.providers?.map((provider) => (
-                  <span
-                    key={provider}
-                    className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm"
-                  >
-                    {provider}
-                  </span>
-                ))}
+                  : "https://via.placeholder.com/72x108/422838/AEB8A0?text=?"
+                }
+                alt={movie.Name}
+                className="movie-poster"
+              />
+              <div style={{ flex: 1 }}>
+                <div className="movie-title">{movie.Name}</div>
+                <div className="movie-year">{movie.Year}</div>
+                {movie.rating && (
+                  <div className="movie-rating">★ {movie.rating.toFixed(1)}</div>
+                )}
+                {movie.runtime && (
+                  <div style={{ fontSize: "0.75rem", color: "var(--cream-muted)", marginBottom: "0.5rem" }}>
+                    {movie.runtime} min
+                  </div>
+                )}
+                {movie.providers?.length > 0 && (
+                  <div className="providers-row">
+                    {movie.providers.map(p => (
+                      <span key={p} className="badge">{p}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      )}
     </div>
   );
 }

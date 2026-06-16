@@ -1,88 +1,227 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+
+const moods = [
+  { value: "fun", label: "Something fun", emoji: "😄" },
+  { value: "serious", label: "Serious & thoughtful", emoji: "🎭" },
+  { value: "emotional", label: "Emotional & moving", emoji: "🥺" },
+  { value: "any", label: "Surprise me", emoji: "🎲" },
+];
+
+const lengths = [
+  { value: "short", label: "Under 90 min", sub: "Quick watch" },
+  { value: "medium", label: "90 – 120 min", sub: "Just right" },
+  { value: "long", label: "Over 120 min", sub: "Epic evening" },
+  { value: "any", label: "Any length", sub: "Doesn't matter" },
+];
+
+const regions = [
+  { value: "english", label: "English" },
+  { value: "hindi", label: "Hindi" },
+  { value: "eastAsian", label: "East Asian" },
+  { value: "international", label: "International" },
+  { value: "any", label: "Doesn't matter" },
+];
 
 function SoloQuizScreen() {
-
   const navigate = useNavigate();
-
   const [mood, setMood] = useState("");
   const [length, setLength] = useState("");
+  const [region, setRegion] = useState("");
+  const [platforms, setPlatforms] = useState([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
 
-  const handleSubmit = () => {
+  const canContinue = mood && length && region;
 
-    navigate("/recommendation", {
-      state: {
-        mood,
-        length
+  useEffect(() => {
+
+    async function loadPlatforms() {
+
+      if (!auth.currentUser) {
+        return;
       }
-    });
 
-  };
+      const userRef = doc(
+        db,
+        "users",
+        auth.currentUser.uid
+      );
+
+      const userSnap =
+        await getDoc(userRef);
+
+      const movies =
+        userSnap.data()
+          ?.watchlistMovies || [];
+
+      const uniquePlatforms =
+        [...new Set(
+          movies.flatMap(
+            movie =>
+              movie.providers || []
+          )
+        )];
+
+      setPlatforms(uniquePlatforms);
+    }
+
+    loadPlatforms();
+
+  }, []);
+
+  function togglePlatform(platform) {
+
+    if (
+      selectedPlatforms.includes(
+        platform
+      )
+    ) {
+
+      setSelectedPlatforms(
+        selectedPlatforms.filter(
+          p => p !== platform
+        )
+      );
+
+    } else {
+
+      setSelectedPlatforms([
+        ...selectedPlatforms,
+        platform
+      ]);
+
+    }
+
+  }
 
   return (
+    <div className="page" style={{ maxWidth: 600 }}>
 
-    <div className="min-h-screen p-6">
+      <button className="back-btn" onClick={() => navigate(-1)}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Back
+      </button>
 
-      <h1 className="text-3xl font-bold mb-6">
-        What are you in the mood for?
-      </h1>
+      <div className="eyebrow">Pick for Me</div>
+      <h1 className="display-title" style={{ marginBottom: "0.5rem" }}>What's the mood?</h1>
+      <p style={{ color: "var(--cream-dim)", fontSize: "0.9rem", marginBottom: "2.5rem" }}>
+        Answer two quick questions and we'll pull something from your watchlist.
+      </p>
 
-      <div className="space-y-3">
-
-        <button
-          onClick={() => setMood("fun")}
-        >
-          Fun
-        </button>
-
-        <button
-          onClick={() => setMood("serious")}
-        >
-          Serious
-        </button>
-
-        <button
-          onClick={() => setMood("emotional")}
-        >
-          Emotional
-        </button>
-
+      {/* Mood */}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div className="eyebrow" style={{ marginBottom: "0.75rem" }}>Mood</div>
+        <div className="quiz-grid">
+          {moods.map(m => (
+            <button
+              key={m.value}
+              className={`quiz-option ${mood === m.value ? "selected" : ""}`}
+              onClick={() => setMood(m.value)}
+            >
+              <span style={{ fontSize: "1.2rem", marginRight: "0.5rem" }}>{m.emoji}</span>
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <h2 className="text-xl font-bold mt-8 mb-4">
-        How long?
-      </h2>
+      {/* Length */}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div className="eyebrow" style={{ marginBottom: "0.75rem" }}>Length</div>
+        <div className="quiz-grid">
+          {lengths.map(l => (
+            <button
+              key={l.value}
+              className={`quiz-option ${length === l.value ? "selected" : ""}`}
+              onClick={() => setLength(l.value)}
+            >
+              <div style={{ fontWeight: 500, color: length === l.value ? "var(--cream)" : "var(--cream-dim)" }}>
+                {l.label}
+              </div>
+              <div style={{ fontSize: "0.75rem", color: "var(--cream-muted)", marginTop: "0.2rem" }}>{l.sub}</div>
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <div className="space-y-3">
+      {/*language/region*/}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div className="eyebrow" style={{ marginBottom: "0.75rem" }}>
+          Language / Region
+        </div>
 
-        <button
-          onClick={() => setLength("short")}
+        <div className="quiz-grid">
+          {regions.map(r => (
+            <button
+              key={r.value}
+              className={`quiz-option ${region === r.value ? "selected" : ""}`}
+              onClick={() => setRegion(r.value)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/*platform*/}
+      <div style={{ marginBottom: "2.5rem" }}>
+
+        <div
+          className="eyebrow"
+          style={{ marginBottom: "0.75rem" }}
         >
-          Under 90 minutes
-        </button>
+          Streaming Service
+        </div>
 
-        <button
-          onClick={() => setLength("medium")}
-        >
-          90 - 120 minutes
-        </button>
+        <div className="quiz-grid">
 
-        <button
-          onClick={() => setLength("long")}
-        >
-          Over 120 minutes
-        </button>
+          {platforms.map(platform => (
+
+            <button
+              key={platform}
+              className={`quiz-option ${
+                selectedPlatforms.includes(
+                  platform
+                )
+                  ? "selected"
+                  : ""
+              }`}
+              onClick={() =>
+                togglePlatform(platform)
+              }
+            >
+              {platform}
+            </button>
+
+          ))}
+
+        </div>
 
       </div>
 
       <button
-        onClick={handleSubmit}
+        className="btn btn-primary btn-large btn-full"
+        onClick={() =>
+          navigate("/recommendation", {
+            state: {
+              mood,
+              length,
+              region,
+              selectedPlatforms
+            }
+          })
+        }
+        disabled={!canContinue}
+        style={{ opacity: canContinue ? 1 : 0.4, cursor: canContinue ? "pointer" : "not-allowed" }}
       >
-        Continue
+        Find My Film →
       </button>
-
     </div>
-
   );
 }
 
