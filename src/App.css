@@ -4,12 +4,16 @@
   --bg: #351E28;
   --bg-elevated: #3f2430;
   --bg-card: #422838;
+  --bg-deep: #0f0a14;
   --sage: #AEB8A0;
   --sage-dim: rgba(174, 184, 160, 0.35);
   --sage-border: rgba(174, 184, 160, 0.2);
   --cream: #FCF6F5;
   --cream-dim: rgba(252, 246, 245, 0.55);
   --cream-muted: rgba(252, 246, 245, 0.35);
+  --gold: #C9A84C;
+  --gold-dim: rgba(201, 168, 76, 0.15);
+  --gold-border: rgba(201, 168, 76, 0.3);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -464,6 +468,16 @@ body {
   opacity: 0.5;
 }
 
+.empty-state-icon-img {
+  width: 48px;
+  height: 48px;
+  opacity: 0.4;
+  margin-bottom: 1rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .empty-state-text {
   color: var(--cream-muted);
   font-size: 0.9rem;
@@ -559,6 +573,297 @@ body {
   border-bottom: 1px solid var(--sage-border);
   font-size: 0.88rem;
   color: var(--cream-dim);
+}
+
+/* ── Poster grid ── */
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.2rem;
+}
+
+.poster-card {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Gradient veil — revealed on hover */
+.poster-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(31, 14, 22, 0.92) 0%,
+    rgba(31, 14, 22, 0.3) 45%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  border-radius: 10px;
+}
+
+.poster-card:hover::after {
+  opacity: 1;
+}
+
+.poster-image {
+  width: 100%;
+  border-radius: 10px;
+  display: block;
+  transition: transform 0.22s ease;
+}
+
+.poster-card:hover .poster-image {
+  transform: scale(1.04);
+}
+
+/* Title + rating revealed on hover */
+.poster-hover-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.9rem 0.7rem 0.75rem;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: none;
+}
+
+.poster-card:hover .poster-hover-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.poster-hover-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cream);
+  display: block;
+  line-height: 1.3;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poster-hover-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+/* ── Inline icon sizes ── */
+.icon-sm {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.icon-xs {
+  width: 11px;
+  height: 11px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* ── Modal overlay ── */
+.movie-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 3, 10, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+/* ── Modal box ── */
+.movie-modal {
+  background: linear-gradient(150deg, #1e1228 0%, #120d18 55%, #1c0e16 100%);
+  border-left: 3px solid rgba(174, 184, 160, 0.4);
+  border-top: 1px solid rgba(174, 184, 160, 0.1);
+  width: min(920px, 90vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 2.5rem;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sage-border) transparent;
+}
+
+.movie-modal::-webkit-scrollbar { width: 4px; }
+.movie-modal::-webkit-scrollbar-track { background: transparent; }
+.movie-modal::-webkit-scrollbar-thumb { background: var(--sage-border); border-radius: 2px; }
+
+/* Ambient poster glow — blurred poster bleeds into modal bg */
+.modal-ambient-glow {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center top;
+  filter: blur(90px) saturate(1.6);
+  opacity: 0.11;
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.movie-modal-content {
+  display: flex;
+  gap: 2.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Modal poster ── */
+.movie-modal-poster {
+  width: 230px;
+  min-width: 230px;
+  border-radius: 10px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* ── Modal info ── */
+.movie-modal-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  margin-bottom: 0.5rem;
+}
+
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  margin-bottom: 0.85rem;
+}
+
+.modal-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 4px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.modal-genre-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Ticket-stub dashed divider */
+.modal-divider {
+  border: none;
+  border-top: 1px dashed rgba(174, 184, 160, 0.22);
+  margin: 1.4rem 0;
+}
+
+.modal-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 0.55rem;
+}
+
+.modal-overview {
+  font-size: 0.875rem;
+  line-height: 1.75;
+  color: var(--cream-dim);
+  margin: 0;
+}
+
+/* ── Modal close button ── */
+.movie-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: rgba(252, 246, 245, 0.06);
+  border: 1px solid var(--sage-border);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  color: var(--cream-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  z-index: 2;
+}
+
+.movie-modal-close:hover {
+  background: rgba(252, 246, 245, 0.12);
+  color: var(--cream);
+  border-color: rgba(174, 184, 160, 0.45);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  float: right;
+}
+
+@media (max-width: 768px) {
+  .movie-modal-content {
+    flex-direction: column;
+  }
+
+  .movie-modal-poster {
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
+    min-width: unset;
+  }
+
+  .modal-title {
+    font-size: 1.6rem;
+  }
+
+  .movie-modal {
+    padding: 1.75rem 1.25rem;
+    border-radius: 12px;
+  }
 }
 
 .watchlist-preview-item:last-child { border-bottom: none; }

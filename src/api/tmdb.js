@@ -43,9 +43,22 @@ export async function getMovieDetails(tmdbId) {
 
   return {
     runtime: data.runtime,
-    genreIds: data.genres?.map(
-      genre => genre.id
-    ) || []
+
+    genreIds:
+      data.genres?.map(
+        genre => genre.id
+      ) || [],
+
+    genres:
+      data.genres?.map(
+        genre => genre.name
+      ) || [],
+
+    overview:
+      data.overview || "",
+
+    originalLanguage:
+      data.original_language
   };
 }
 

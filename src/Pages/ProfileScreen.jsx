@@ -27,9 +27,25 @@ function ProfileScreen() {
             movie.posterPath = tmdbData.posterPath;
             movie.rating = tmdbData.rating;
             movie.providers = await getWatchProviders(tmdbData.tmdbId);
-            const details = await getMovieDetails(tmdbData.tmdbId);
-            movie.runtime = details.runtime;
-            movie.genreIds = details.genreIds;
+            const details =
+              await getMovieDetails(
+                tmdbData.tmdbId
+              );
+
+            movie.runtime =
+              details.runtime;
+
+            movie.genreIds =
+              details.genreIds;
+
+            movie.genres =
+              details.genres;
+
+            movie.overview =
+              details.overview;
+
+            movie.originalLanguage =
+              details.originalLanguage;
           }
         }
         const currentUser = auth.currentUser;
