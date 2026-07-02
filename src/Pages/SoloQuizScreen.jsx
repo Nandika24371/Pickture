@@ -5,9 +5,9 @@ import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 const moods = [
-  { value: "fun", label: "Something fun", emoji: "😄" },
-  { value: "serious", label: "Serious & thoughtful", emoji: "🎭" },
-  { value: "emotional", label: "Emotional & moving", emoji: "🥺" },
+  { value: "fun", label: "Something fun", emoji: "(˶ᵔ ᵕ ᵔ˶)" },
+  { value: "serious", label: "Serious & thoughtful", emoji: "(ㆆ_ㆆ)" },
+  { value: "emotional", label: "Emotional & moving", emoji: "(╥‸╥)" },
   { value: "any", label: "Surprise me", emoji: "🎲" },
 ];
 
@@ -110,7 +110,7 @@ function SoloQuizScreen() {
       <div className="eyebrow">Pick for Me</div>
       <h1 className="display-title" style={{ marginBottom: "0.5rem" }}>What's the mood?</h1>
       <p style={{ color: "var(--cream-dim)", fontSize: "0.9rem", marginBottom: "2.5rem" }}>
-        Answer two quick questions and we'll pull something from your watchlist.
+        Answer a few quick questions and we'll pull something from your watchlist.
       </p>
 
       {/* Mood */}

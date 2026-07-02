@@ -18,13 +18,16 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-  background-color: var(--bg);
-  color: var(--cream);
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+body{
+    background:#351E28;
+
+    background-image:
+    radial-gradient(
+        rgba(255,255,255,.045) 1.5px,
+        transparent 2px
+    );
+
+    background-size:26px 26px;
 }
 
 .App {
@@ -32,7 +35,31 @@ body {
   min-height: 100vh;
 }
 
-/* ── Navbar ── */
+.page::before{
+    content:"✦";
+    position:absolute;
+    top:70px;
+    right:-40px;
+    font-size:80px;
+    color:rgba(174,184,160,.08);
+    transform:rotate(15deg);
+}
+
+.page::after{
+    content:"";
+    position:absolute;
+    bottom:120px;
+    left:-120px;
+
+    width:220px;
+    height:220px;
+
+    border-radius:50%;
+    background:rgba(174,184,160,.08);
+    filter:blur(40px);
+}
+
+/* Navbar */
 .navbar {
   position: sticky;
   top: 0;
@@ -60,6 +87,26 @@ body {
   color: var(--sage);
 }
 
+.navbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 100%;
+
+  width: 100%;
+  height: 80px;
+
+  pointer-events: none;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(25, 14, 20, 0.65) 0%,
+    rgba(25, 14, 20, 0.45) 20%,
+    rgba(25, 14, 20, 0.2) 50%,
+    transparent 100%
+  );
+}
+
 .navbar-links {
   display: flex;
   align-items: center;
@@ -68,7 +115,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Navbar search ── */
+/* Navbar search */
 .navbar-search {
   position: relative;
   flex: 1;
@@ -243,7 +290,7 @@ body {
   color: #d27a7a;
 }
 
-/* ── Page container ── */
+/* Page container */
 .page {
   max-width: 900px;
   margin: 0 auto;
@@ -256,7 +303,7 @@ body {
   padding: 3rem 2rem 5rem;
 }
 
-/* ── Back button ── */
+/* Back button */
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -278,7 +325,7 @@ body {
 
 .back-btn svg { width: 14px; height: 14px; }
 
-/* ── Typography ── */
+/* Typography */
 .display-title {
   font-family: 'Playfair Display', serif;
   font-size: 2.8rem;
@@ -305,14 +352,14 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* ── Divider ── */
+/* Divider */
 .divider {
   border: none;
   border-top: 1px solid var(--sage-border);
   margin: 2.5rem 0;
 }
 
-/* ── Buttons ── */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -378,7 +425,7 @@ body {
 
 .btn-full { width: 100%; justify-content: center; }
 
-/* ── Cards / elevated surfaces ── */
+/* Cards / elevated surfaces */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--sage-border);
@@ -386,7 +433,7 @@ body {
   padding: 1.5rem;
 }
 
-/* ── Inputs ── */
+/* Inputs */
 .input {
   width: 100%;
   background: var(--bg-elevated);
@@ -416,7 +463,7 @@ body {
 
 .input-group { margin-bottom: 1.25rem; }
 
-/* ── Stats row ── */
+/* Stats row */
 .stats-row {
   display: flex;
   gap: 2.5rem;
@@ -442,7 +489,7 @@ body {
   margin-top: 0.25rem;
 }
 
-/* ── Provider badge ── */
+/* Provider badge */
 .badge {
   display: inline-block;
   background: var(--sage-dim);
@@ -455,7 +502,7 @@ body {
   padding: 0.2rem 0.55rem;
 }
 
-/* ── Movie card (watchlist) ── */
+/* Movie card (watchlist) */
 .movie-row {
   display: flex;
   gap: 1.25rem;
@@ -502,7 +549,7 @@ body {
   margin-top: 0.5rem;
 }
 
-/* ── Filter pills ── */
+/* Filter pills */
 .filter-bar {
   display: flex;
   gap: 0.5rem;
@@ -530,7 +577,7 @@ body {
   border-color: var(--sage);
 }
 
-/* ── Quiz option buttons ── */
+/* Quiz option buttons */
 .quiz-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -564,7 +611,7 @@ body {
   color: var(--cream);
 }
 
-/* ── Welcome screen ── */
+/* Welcome screen */
 .welcome-screen {
   min-height: 100vh;
   display: flex;
@@ -586,7 +633,7 @@ body {
   pointer-events: none;
 }
 
-/* ── File upload area ── */
+/* File upload area */
 .upload-area {
   border: 1px dashed var(--sage-border);
   border-radius: 6px;
@@ -605,7 +652,7 @@ body {
   cursor: pointer;
 }
 
-/* ── Loading / empty states ── */
+/* Loading / empty states */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -632,7 +679,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* ── Recommendation card ── */
+/* Recommendation card */
 .rec-poster {
   width: 200px;
   border-radius: 6px;
@@ -646,7 +693,7 @@ body {
 
 .fade-up { animation: fadeUp 0.4s ease-out both; }
 
-/* ── Auth screen ── */
+/* Auth screen */
 .auth-container {
   min-height: 100vh;
   display: flex;
@@ -692,7 +739,7 @@ body {
   text-underline-offset: 2px;
 }
 
-/* ── Upload row ── */
+/*Upload row*/
 .upload-row {
   position: relative;
   display: flex;
@@ -724,7 +771,7 @@ body {
   color: var(--cream-dim);
 }
 
-/* ── Poster grid ── */
+/*Poster grid*/
 .poster-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -741,7 +788,7 @@ body {
   overflow: hidden;
 }
 
-/* Gradient veil — revealed on hover */
+/* Gradient veil — revealed on hover*/
 .poster-card::after {
   content: '';
   position: absolute;
@@ -813,7 +860,7 @@ body {
   color: var(--gold);
 }
 
-/* ── Inline icon sizes ── */
+/*Inline icon sizes*/
 .icon-sm {
   width: 15px;
   height: 15px;
@@ -828,7 +875,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Modal overlay ── */
+/*Modal overlay*/
 .movie-modal-overlay {
   position: fixed;
   inset: 0;
@@ -840,7 +887,7 @@ body {
   padding: 1.5rem;
 }
 
-/* ── Modal box ── */
+/*Modal box*/
 .movie-modal {
   background: linear-gradient(150deg, #1e1228 0%, #120d18 55%, #1c0e16 100%);
   border-left: 3px solid rgba(174, 184, 160, 0.4);
@@ -879,7 +926,7 @@ body {
   z-index: 1;
 }
 
-/* ── Modal poster ── */
+/*Modal poster*/
 .movie-modal-poster {
   width: 230px;
   min-width: 230px;
@@ -891,7 +938,7 @@ body {
   align-self: flex-start;
 }
 
-/* ── Modal info ── */
+/* Modal info */
 .movie-modal-info {
   flex: 1;
   min-width: 0;
@@ -959,14 +1006,14 @@ body {
   margin: 0;
 }
 
-/* ── Modal watched / remove actions ── */
+/* Modal watched / remove actions */
 .modal-actions {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-/* ── Modal close button ── */
+/* Modal close button */
 .movie-modal-close {
   position: absolute;
   top: 1.25rem;

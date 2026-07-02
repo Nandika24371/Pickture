@@ -3,7 +3,11 @@ import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import MovieModal from "../components/MovieModal";
-import { markMovieAsWatched, removeMovieFromWatchlist } from "../utils/watchlist";
+import {
+  markMovieAsWatched,
+  removeMovieFromWatchlist,
+  searchWatchlist,
+} from "../utils/watchlist";
 
 const ICONS = {
   dice:        "/src/assets/dice.png",        // Used in: "Pick for Me" button
@@ -16,6 +20,7 @@ function WatchlistScreen() {
   const [movies, setMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [selectedProviders, setSelectedProviders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -50,7 +55,7 @@ function WatchlistScreen() {
     setSelectedMovie(null);
   }
 
-  const filtered = movies.filter(m => {
+  const filtered = searchWatchlist(movies, searchTerm).filter(m => {
     if (selectedProviders.length === 0) return true;
     return selectedProviders.some(p => m.providers?.includes(p));
   });
@@ -59,7 +64,7 @@ function WatchlistScreen() {
     <>
       <div className="page-wide">
 
-        {/* ── Header ── */}
+        {/*Header*/}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="eyebrow">Collection</div>
@@ -72,7 +77,20 @@ function WatchlistScreen() {
           </button>
         </div>
 
-        {/* ── Provider filter pills ── */}
+        {/*search within watchlist*/}
+        {movies.length > 0 && (
+          <div style={{ maxWidth: 340, marginBottom: "1.5rem" }}>
+            <input
+              type="text"
+              className="input"
+              placeholder="Search your watchlist…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/*filtering pills*/}
         {allProviders.length > 0 && (
           <div className="filter-bar">
             {providers.map(provider => {
@@ -92,18 +110,18 @@ function WatchlistScreen() {
           </div>
         )}
 
-        {/* ── Grid / empty states ── */}
         {loading ? (
           <div className="empty-state">
             <p className="empty-state-text">Loading your watchlist…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            {/* ICON: clapperboard — empty state */}
             <img src={ICONS.clapperboard} alt="" className="empty-state-icon-img" />
             <p className="empty-state-text">
               {movies.length === 0
                 ? "Your watchlist is empty. Import a CSV from your profile, or search for a movie above."
+                : searchTerm.trim()
+                ? `No films match "${searchTerm}".`
                 : "No films match the selected filters."}
             </p>
           </div>
@@ -124,12 +142,10 @@ function WatchlistScreen() {
                   alt={movie.Name}
                   className="poster-image"
                 />
-                {/* Hover overlay — title + rating revealed via CSS */}
                 <div className="poster-hover-info">
                   <span className="poster-hover-title">{movie.Name}</span>
                   {movie.rating && (
                     <span className="poster-hover-rating">
-                      {/* ICON: star — poster hover rating */}
                       <img src={ICONS.star} alt="" className="icon-xs" />
                       {movie.rating.toFixed(1)}
                     </span>

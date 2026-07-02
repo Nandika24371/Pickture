@@ -25,7 +25,7 @@ function Navbar() {
     return unsub;
   }, []);
 
-  // Refresh the "already on watchlist" set whenever a user signs in.
+  // refresh the "already on watchlist" set whenever a user signs in.
   useEffect(() => {
     if (!user) {
       setExistingIds(new Set());
@@ -53,7 +53,7 @@ function Navbar() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  // Close the dropdown on outside click.
+  // lcose dropdown on outside click.
   useEffect(() => {
     function handleClick(e) {
       if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {

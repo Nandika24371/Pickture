@@ -6,13 +6,17 @@ import Papa from "papaparse";
 import { useNavigate } from "react-router-dom";
 import { searchMovie, getWatchProviders, getMovieDetails } from "../api/tmdb";
 import MovieModal from "../components/MovieModal";
-import { markMovieAsWatched, removeMovieFromWatchlist } from "../utils/watchlist";
+import {
+  markMovieAsWatched,
+  removeMovieFromWatchlist,
+  dedupeAgainstWatchlist,
+} from "../utils/watchlist";
 
 const ICONS = {
   star: "/src/assets/star.png",
 };
 
-const PREVIEW_COUNT = 6;
+const PREVIEW_COUNT = 4;
 
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
@@ -28,8 +32,20 @@ function ProfileScreen() {
     Papa.parse(file, {
       header: true,
       complete: async (results) => {
-        const movies = results.data.filter((m) => m.Name);
-        for (const movie of movies) {
+        const currentUser = auth.currentUser;
+        const userRef = doc(db, "users", currentUser.uid);
+
+        // Re-fetch the latest watchlist so we're deduping against current data,
+        // not whatever was loaded when the page first rendered.
+        const snap = await getDoc(userRef);
+        const existingMovies = snap.exists()
+          ? snap.data().watchlistMovies || []
+          : [];
+
+        const parsedMovies = results.data.filter((m) => m.Name);
+        const newMovies = dedupeAgainstWatchlist(parsedMovies, existingMovies);
+
+        for (const movie of newMovies) {
           const tmdbData = await searchMovie(movie.Name, movie.Year);
           if (tmdbData) {
             movie.tmdbId = tmdbData.tmdbId;
@@ -57,10 +73,12 @@ function ProfileScreen() {
               details.originalLanguage;
           }
         }
-        const currentUser = auth.currentUser;
-        await updateDoc(doc(db, "users", currentUser.uid), {
-          watchlistMovies: movies,
-          watchlistCount: movies.length,
+
+        const mergedMovies = [...newMovies, ...existingMovies];
+
+        await updateDoc(userRef, {
+          watchlistMovies: mergedMovies,
+          watchlistCount: mergedMovies.length,
         });
         setUploading(false);
         window.location.reload();
@@ -139,7 +157,7 @@ function ProfileScreen() {
       <div style={{ marginBottom: "2.5rem" }}>
         <div className="section-title">Import Watchlist</div>
         <p style={{ color: "var(--cream-dim)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-          Upload a CSV from Letterboxd or a compatible export to populate your watchlist, or use the search bar above to add films one at a time.
+          Upload a CSV from Letterboxd or a compatible export to add films to your watchlist — films already on your list are skipped automatically. You can also use the search bar above to add films one at a time.
         </p>
 
         <label className="upload-row" style={{ cursor: "pointer" }}>

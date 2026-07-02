@@ -2,11 +2,12 @@ import { auth, db } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getMovieDetails, getWatchProviders } from "../api/tmdb";
 
-// Two movies are "the same" if they share a tmdbId, or (for older
-// CSV-imported entries that never resolved a tmdbId) if the name + year match.
-function sameMovie(a, b) {
+// 2 movies are "the same" if they share a tmdbId, orif the name n year match.
+export function isSameMovie(a, b) {
   if (a.tmdbId && b.tmdbId) return a.tmdbId === b.tmdbId;
-  return a.Name === b.Name && a.Year === b.Year;
+  const aName = (a.Name || "").trim().toLowerCase();
+  const bName = (b.Name || "").trim().toLowerCase();
+  return aName === bName && String(a.Year) === String(b.Year);
 }
 
 async function getUserRefAndData() {
@@ -17,15 +18,18 @@ async function getUserRefAndData() {
   return { ref, data: snap.exists() ? snap.data() : {} };
 }
 
-/**
- * Add a movie (from a TMDB search result) to the signed-in user's watchlist.
- * basicMovie: { tmdbId, title, year, posterPath, rating }
- */
+//add to watchlist from search bar
 export async function addMovieToWatchlist(basicMovie) {
   const { ref, data } = await getUserRefAndData();
   const watchlistMovies = data.watchlistMovies || [];
 
-  if (watchlistMovies.some((m) => m.tmdbId === basicMovie.tmdbId)) {
+  const candidate = {
+    Name: basicMovie.title,
+    Year: basicMovie.year,
+    tmdbId: basicMovie.tmdbId,
+  };
+
+  if (watchlistMovies.some((m) => isSameMovie(m, candidate))) {
     return { alreadyAdded: true, watchlistMovies };
   }
 
@@ -48,7 +52,7 @@ export async function addMovieToWatchlist(basicMovie) {
     originalLanguage: details.originalLanguage,
   };
 
-  const updated = [...watchlistMovies, movie];
+  const updated = [movie, ...watchlistMovies];
   await updateDoc(ref, {
     watchlistMovies: updated,
     watchlistCount: updated.length,
@@ -57,11 +61,11 @@ export async function addMovieToWatchlist(basicMovie) {
   return { alreadyAdded: false, watchlistMovies: updated, movie };
 }
 
-/** Remove a movie from the watchlist entirely (not marked watched). */
+//remove a movie from watchlist
 export async function removeMovieFromWatchlist(movie) {
   const { ref, data } = await getUserRefAndData();
   const watchlistMovies = (data.watchlistMovies || []).filter(
-    (m) => !sameMovie(m, movie)
+    (m) => !isSameMovie(m, movie)
   );
 
   await updateDoc(ref, {
@@ -72,14 +76,14 @@ export async function removeMovieFromWatchlist(movie) {
   return watchlistMovies;
 }
 
-/** Move a movie from the watchlist into the watched list. */
+//move a movie from the watchlist into the watched list.
 export async function markMovieAsWatched(movie) {
   const { ref, data } = await getUserRefAndData();
   const watchlistMovies = (data.watchlistMovies || []).filter(
-    (m) => !sameMovie(m, movie)
+    (m) => !isSameMovie(m, movie)
   );
   const existingWatched = data.watchedMovies || [];
-  const alreadyWatched = existingWatched.some((m) => sameMovie(m, movie));
+  const alreadyWatched = existingWatched.some((m) => isSameMovie(m, movie));
   const watchedMovies = alreadyWatched
     ? existingWatched
     : [...existingWatched, movie];
@@ -94,7 +98,20 @@ export async function markMovieAsWatched(movie) {
   return { watchlistMovies, watchedMovies };
 }
 
-/** Fetch just the set of tmdbIds currently on the user's watchlist. */
+//adding only new movies
+export function dedupeAgainstWatchlist(candidateMovies, existingMovies) {
+  return candidateMovies.filter(
+    (candidate) => !existingMovies.some((m) => isSameMovie(m, candidate))
+  );
+}
+
+//filter by title
+export function searchWatchlist(movies, term) {
+  const q = term.trim().toLowerCase();
+  if (!q) return movies;
+  return movies.filter((m) => m.Name?.toLowerCase().includes(q));
+}
+
 export async function getWatchlistTmdbIds() {
   const user = auth.currentUser;
   if (!user) return new Set();
