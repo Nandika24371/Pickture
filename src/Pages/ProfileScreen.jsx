@@ -35,8 +35,6 @@ function ProfileScreen() {
         const currentUser = auth.currentUser;
         const userRef = doc(db, "users", currentUser.uid);
 
-        // Re-fetch the latest watchlist so we're deduping against current data,
-        // not whatever was loaded when the page first rendered.
         const snap = await getDoc(userRef);
         const existingMovies = snap.exists()
           ? snap.data().watchlistMovies || []

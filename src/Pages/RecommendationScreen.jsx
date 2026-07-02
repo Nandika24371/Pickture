@@ -168,7 +168,7 @@ function RecommendationScreen() {
   const { mood, length } = location.state || {};
 
   return (
-    <div className="page" style={{ maxWidth: 600 }}>
+    <div className="page page-wide">
 
       <button className="back-btn" onClick={() => navigate("/solo-quiz")}>
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -226,6 +226,32 @@ function RecommendationScreen() {
               </p>
             )}
 
+            {recommendation.overview && (
+  <div style={{ marginBottom: "1.5rem" }}>
+    <div
+      style={{
+        fontSize: "0.72rem",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        color: "var(--cream-muted)",
+        marginBottom: "0.5rem"
+      }}
+    >
+      Summary
+    </div>
+
+    <p
+      style={{
+        color: "var(--cream-dim)",
+        lineHeight: 1.7,
+        fontSize: "0.9rem"
+      }}
+    >
+      {recommendation.overview}
+    </p>
+  </div>
+)}
+
             {recommendation.providers?.length > 0 && (
               <div style={{ marginBottom: "1.5rem" }}>
                 <div style={{ fontSize: "0.72rem", color: "var(--cream-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.5rem" }}>Available on</div>
@@ -236,6 +262,8 @@ function RecommendationScreen() {
                 </div>
               </div>
             )}
+
+
 
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <button className="btn btn-outline" onClick={handleSuggestAnother} disabled={actionLoading}>

@@ -106,7 +106,6 @@ body{
     transparent 100%
   );
 }
-
 .navbar-links {
   display: flex;
   align-items: center;
@@ -298,11 +297,10 @@ body{
 }
 
 .page-wide {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 3rem 2rem 5rem;
+    max-width: 1050px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
 }
-
 /* Back button */
 .back-btn {
   display: inline-flex;
@@ -680,10 +678,11 @@ body{
 }
 
 /* Recommendation card */
-.rec-poster {
-  width: 200px;
-  border-radius: 6px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+.rec-poster{
+    width: 260px;
+    min-width: 260px;
+    border-radius:10px;
+    box-shadow:0 18px 45px rgba(0,0,0,.35);
 }
 
 @keyframes fadeUp {

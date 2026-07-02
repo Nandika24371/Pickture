@@ -44,12 +44,12 @@ Email-based sign up / log in via Firebase Auth. Each user gets their own documen
 - From the modal (or the recommendation screen), you can **mark a film as watched** or **remove it from your watchlist** - watched films count toward your stats.
 
 ### Pick for Me (Solo Quiz)
-A quick four-question quiz — mood, runtime, language/region, and streaming service — pulls a matching film at random from your own watchlist.
+A quick four-question quiz: mood, runtime, language/region, and streaming service; pulls a matching film at random from your own watchlist.
 
 ### Recommendation Screen
 - Shows the picked film with poster, rating, runtime, and providers.
-- **Try Another** — reroll within the same filters.
-- **Mark as Watched** / **Remove from Watchlist** — act on the recommendation directly without leaving the screen.
+- **Try Another**: reroll within the same filters.
+- **Mark as Watched** / **Remove from Watchlist**: act on the recommendation directly without leaving the screen.
 
 ---
 
@@ -59,7 +59,7 @@ A quick four-question quiz — mood, runtime, language/region, and streaming ser
 - **Backend / Auth / DB:** Firebase (Authentication + Firestore)
 - **Movie Data:** [TMDB API](https://www.themoviedb.org/documentation/api)
 - **CSV Parsing:** PapaParse
-- **Styling:** Custom CSS — wine / sage / cream palette, Playfair Display + Inter (Letterboxd inspired)
+- **Styling:** Custom CSS: wine / sage / cream palette, Playfair Display + Inter (Letterboxd inspired)
 
 ---
 
@@ -117,18 +117,18 @@ src/
 
 ---
 
-## Roadmap — Swiping Rooms
+## Roadmap - Swiping Rooms
 
 The next feature: turning movie night into a group decision instead of a monologue.
 
 **How it'll work:**
 
 1. **Create a room.** One person spins up a temporary room and gets a shareable room code.
-2. **Friends join.** Anyone with the code can hop into the waiting room from their own device — no accounts required to join, just a name.
-3. **Everyone answers a quick quiz.** Mood, runtime, genre preferences — same spirit as the existing Solo Quiz, but the answers are pooled across everyone in the room.
+2. **Friends join.** Anyone with the code can hop into the waiting room from their own device
+3. **Everyone answers a quick quiz.** Mood, runtime, genre preferences (same spirit as the existing Solo Quiz, but the answers are pooled across everyone in the room)
 4. **A shared pool is generated.** Pickture builds a pool of candidate films (pulled from participants' watchlists and/or TMDB) that fits the group's combined answers.
 5. **Everyone swipes.** Each person swipes yes/no on the pool independently, at their own pace, without seeing anyone else's choices.
-6. **Unanimous matches win.** Once everyone's finished, Pickture surfaces the films everyone said yes to — ranked, with a clear "top pick" — so the group lands on something without an argument.
+6. **Unanimous matches win.** Once everyone's finished, Pickture surfaces the films everyone said yes to (ranked, with a clear "top pick")so the group lands on something without an argument.
 
 This flow is already scaffolded in the codebase (`CreateRoomScreen`, `JoinRoomScreen`, `WaitingRoomScreen`, `QuizScreen`, `SwipeScreen`, `ResultsScreen`) but currently runs on local mock data. The remaining work is wiring it up to real-time Firestore rooms so answers, swipes, and matches sync live across everyone's devices.
 
