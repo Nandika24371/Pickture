@@ -4,20 +4,6 @@
 
 Pickture is a Letterboxd-inspired movie companion built with React, Firebase, and the TMDB API. Import your watchlist, get personalized recommendations based on mood and time, and (soon) settle movie night with friends without the endless back-and-forth.
 
----
-
-## Screenshots
-
-| Profile | Watchlist |
-|---|---|
-| ![Profile screen](screenshots/profile.png) | ![Watchlist screen](screenshots/watchlist.png) |
-
-| Movie Modal | Pick for Me |
-|---|---|
-| ![Movie detail modal](screenshots/movie-modal.png) | ![Recommendation screen](screenshots/recommendation.png) |
-
----
-
 ## Current Features
 
 ### Authentication
@@ -28,6 +14,10 @@ Email-based sign up / log in via Firebase Auth. Each user gets their own documen
 - **Import from Letterboxd**: upload a CSV export and every entry is displayed in watchlist view with poster, rating, runtime, genres, synopsis, original language, and streaming availability via TMDB.
 - Import is **duplicate-safe**: re-uploading a CSV only adds movies that aren't already on your watchlist, it never wipes or overwrites what's already there.
 - A watchlist preview (first 4 posters, newest first) with a "See all" link through to the full watchlist.
+
+<p align="center">
+<img src="screenshots/profile.png" width="750">
+</p>
 
 ### Search & Add (Navbar)
 - A search bar is in the top nav on every page (once signed in).
@@ -43,13 +33,25 @@ Email-based sign up / log in via Firebase Auth. Each user gets their own documen
 - Click any poster to open a detail modal with synopsis, genres, rating, runtime, and where to watch.
 - From the modal (or the recommendation screen), you can **mark a film as watched** or **remove it from your watchlist** - watched films count toward your stats.
 
+<p align="center">
+<img src="screenshots/watchlist.png" width="750">
+</p>
+
 ### Pick for Me (Solo Quiz)
 A quick four-question quiz: mood, runtime, language/region, and streaming service; pulls a matching film at random from your own watchlist.
+
+<p align="center">
+<img src="screenshots/quiz.png" width="750">
+</p>
 
 ### Recommendation Screen
 - Shows the picked film with poster, rating, runtime, and providers.
 - **Try Another**: reroll within the same filters.
 - **Mark as Watched** / **Remove from Watchlist**: act on the recommendation directly without leaving the screen.
+
+<p align="center">
+<img src="screenshots/recommendation.png" width="750">
+</p>
 
 ---
 
