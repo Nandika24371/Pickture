@@ -5,10 +5,19 @@ import { onAuthStateChanged } from "firebase/auth";
 import Papa from "papaparse";
 import { useNavigate } from "react-router-dom";
 import { searchMovie, getWatchProviders, getMovieDetails } from "../api/tmdb";
+import MovieModal from "../components/MovieModal";
+import { markMovieAsWatched, removeMovieFromWatchlist } from "../utils/watchlist";
+
+const ICONS = {
+  star: "/src/assets/star.png",
+};
+
+const PREVIEW_COUNT = 6;
 
 function ProfileScreen() {
   const [userData, setUserData] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
   const navigate = useNavigate();
 
   const handleWatchlistUpload = (event) => {
@@ -68,6 +77,28 @@ function ProfileScreen() {
     return () => unsub();
   }, []);
 
+  async function handleMarkWatched(movie) {
+    const { watchlistMovies, watchedMovies } = await markMovieAsWatched(movie);
+    setUserData((prev) => ({
+      ...prev,
+      watchlistMovies,
+      watchlistCount: watchlistMovies.length,
+      watchedMovies,
+      watchedCount: watchedMovies.length,
+    }));
+    setSelectedMovie(null);
+  }
+
+  async function handleRemove(movie) {
+    const watchlistMovies = await removeMovieFromWatchlist(movie);
+    setUserData((prev) => ({
+      ...prev,
+      watchlistMovies,
+      watchlistCount: watchlistMovies.length,
+    }));
+    setSelectedMovie(null);
+  }
+
   if (!userData) {
     return (
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -77,6 +108,8 @@ function ProfileScreen() {
       </div>
     );
   }
+
+  const previewMovies = userData.watchlistMovies?.slice(0, PREVIEW_COUNT) || [];
 
   return (
     <div className="page">
@@ -106,7 +139,7 @@ function ProfileScreen() {
       <div style={{ marginBottom: "2.5rem" }}>
         <div className="section-title">Import Watchlist</div>
         <p style={{ color: "var(--cream-dim)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-          Upload a CSV from Letterboxd or a compatible export to populate your watchlist.
+          Upload a CSV from Letterboxd or a compatible export to populate your watchlist, or use the search bar above to add films one at a time.
         </p>
 
         <label className="upload-row" style={{ cursor: "pointer" }}>
@@ -136,27 +169,49 @@ function ProfileScreen() {
           </button>
         </div>
 
-        {userData.watchlistMovies?.length > 0 ? (
-          <div>
-            {userData.watchlistMovies.slice(0, 8).map((movie, i) => (
-              <div key={i} className="watchlist-preview-item">
-                <span style={{ color: "var(--cream)" }}>{movie.Name}</span>
-                <span style={{ color: "var(--cream-muted)", marginLeft: "0.5rem" }}>({movie.Year})</span>
-              </div>
+        {previewMovies.length > 0 ? (
+          <div className="poster-grid">
+            {previewMovies.map((movie, i) => (
+              <button
+                key={i}
+                className="poster-card"
+                onClick={() => setSelectedMovie(movie)}
+              >
+                <img
+                  src={
+                    movie.posterPath
+                      ? `https://image.tmdb.org/t/p/w300${movie.posterPath}`
+                      : "https://via.placeholder.com/200x300"
+                  }
+                  alt={movie.Name}
+                  className="poster-image"
+                />
+                <div className="poster-hover-info">
+                  <span className="poster-hover-title">{movie.Name}</span>
+                  {movie.rating && (
+                    <span className="poster-hover-rating">
+                      <img src={ICONS.star} alt="" className="icon-xs" />
+                      {movie.rating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              </button>
             ))}
-            {userData.watchlistMovies.length > 8 && (
-              <p style={{ fontSize: "0.78rem", color: "var(--cream-muted)", marginTop: "0.75rem" }}>
-                +{userData.watchlistMovies.length - 8} more films
-              </p>
-            )}
           </div>
         ) : (
           <div className="empty-state">
             <div className="empty-state-icon">🎬</div>
-            <p className="empty-state-text">Your watchlist is empty. Import a CSV to get started.</p>
+            <p className="empty-state-text">Your watchlist is empty. Import a CSV or search for a film above to get started.</p>
           </div>
         )}
       </div>
+
+      <MovieModal
+        movie={selectedMovie}
+        onClose={() => setSelectedMovie(null)}
+        onMarkWatched={handleMarkWatched}
+        onRemove={handleRemove}
+      />
     </div>
   );
 }

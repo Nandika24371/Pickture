@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { markMovieAsWatched, removeMovieFromWatchlist } from "../utils/watchlist";
 
 const moodLabels = {
   fun: "Something Fun",
@@ -23,6 +24,8 @@ function RecommendationScreen() {
   const [recommendation, setRecommendation] = useState(null);
   const [allMovies, setAllMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
   const selectedPlatforms = location.state?.selectedPlatforms || [];
 
   async function loadMovies() {
@@ -114,6 +117,8 @@ function RecommendationScreen() {
       pool = movies;
     }
 
+    if (pool.length === 0) return null;
+
     return pool[
       Math.floor(
         Math.random() * pool.length
@@ -131,6 +136,34 @@ function RecommendationScreen() {
   const handleSuggestAnother = () => {
     if (allMovies.length > 0) setRecommendation(pickRandom(allMovies));
   };
+
+  async function handleMarkWatched() {
+    if (!recommendation || actionLoading) return;
+    setActionLoading(true);
+    setActionMessage("");
+    try {
+      const { watchlistMovies } = await markMovieAsWatched(recommendation);
+      setAllMovies(watchlistMovies);
+      setRecommendation(watchlistMovies.length > 0 ? pickRandom(watchlistMovies) : null);
+      setActionMessage("Marked as watched");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (!recommendation || actionLoading) return;
+    setActionLoading(true);
+    setActionMessage("");
+    try {
+      const watchlistMovies = await removeMovieFromWatchlist(recommendation);
+      setAllMovies(watchlistMovies);
+      setRecommendation(watchlistMovies.length > 0 ? pickRandom(watchlistMovies) : null);
+      setActionMessage("Removed from watchlist");
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   const { mood, length } = location.state || {};
 
@@ -205,13 +238,28 @@ function RecommendationScreen() {
             )}
 
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <button className="btn btn-outline" onClick={handleSuggestAnother}>
+              <button className="btn btn-outline" onClick={handleSuggestAnother} disabled={actionLoading}>
                 Try Another
               </button>
               <button className="btn btn-ghost" onClick={() => navigate("/watchlist")}>
                 View Watchlist
               </button>
             </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+              <button className="btn btn-primary" onClick={handleMarkWatched} disabled={actionLoading}>
+                {actionLoading ? "…" : "Mark as Watched"}
+              </button>
+              <button className="btn btn-danger" onClick={handleRemove} disabled={actionLoading}>
+                {actionLoading ? "…" : "Remove from Watchlist"}
+              </button>
+            </div>
+
+            {actionMessage && (
+              <p style={{ fontSize: "0.78rem", color: "var(--sage)", marginTop: "0.75rem" }}>
+                {actionMessage}
+              </p>
+            )}
           </div>
         </div>
       )}

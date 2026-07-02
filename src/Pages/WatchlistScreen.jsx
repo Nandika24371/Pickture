@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import MovieModal from "../components/MovieModal";
+import { markMovieAsWatched, removeMovieFromWatchlist } from "../utils/watchlist";
+
 const ICONS = {
   dice:        "/src/assets/dice.png",        // Used in: "Pick for Me" button
   star:        "/src/assets/star.png",        // Used in: modal rating chip + poster hover rating
@@ -34,6 +37,18 @@ function WatchlistScreen() {
     }
     load();
   }, []);
+
+  async function handleMarkWatched(movie) {
+    const { watchlistMovies } = await markMovieAsWatched(movie);
+    setMovies(watchlistMovies);
+    setSelectedMovie(null);
+  }
+
+  async function handleRemove(movie) {
+    const watchlistMovies = await removeMovieFromWatchlist(movie);
+    setMovies(watchlistMovies);
+    setSelectedMovie(null);
+  }
 
   const filtered = movies.filter(m => {
     if (selectedProviders.length === 0) return true;
@@ -88,7 +103,7 @@ function WatchlistScreen() {
             <img src={ICONS.clapperboard} alt="" className="empty-state-icon-img" />
             <p className="empty-state-text">
               {movies.length === 0
-                ? "Your watchlist is empty. Import a CSV from your profile."
+                ? "Your watchlist is empty. Import a CSV from your profile, or search for a movie above."
                 : "No films match the selected filters."}
             </p>
           </div>
@@ -127,109 +142,12 @@ function WatchlistScreen() {
       </div>
 
       {/* ── Movie detail modal ── */}
-      {selectedMovie && (
-        <div
-          className="movie-modal-overlay"
-          onClick={() => setSelectedMovie(null)}
-        >
-          <div
-            className="movie-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient glow — blurred poster bleeds into modal background */}
-            {selectedMovie.posterPath && (
-              <div
-                className="modal-ambient-glow"
-                style={{
-                  backgroundImage: `url(https://image.tmdb.org/t/p/w300${selectedMovie.posterPath})`
-                }}
-              />
-            )}
-
-            {/* Close button */}
-            <button
-              className="movie-modal-close"
-              onClick={() => setSelectedMovie(null)}
-              aria-label="Close"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-
-            <div className="movie-modal-content">
-
-              {/* Poster */}
-              <img
-                src={
-                  selectedMovie.posterPath
-                    ? `https://image.tmdb.org/t/p/w500${selectedMovie.posterPath}`
-                    : "https://via.placeholder.com/300x450"
-                }
-                alt={selectedMovie.Name}
-                className="movie-modal-poster"
-              />
-
-              {/* Info */}
-              <div className="movie-modal-info">
-
-                {/* Eyebrow: year · runtime */}
-                <div className="modal-eyebrow">
-                  {selectedMovie.Year}
-                  {selectedMovie.runtime && (
-                    <span> · {selectedMovie.runtime} min</span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h2 className="modal-title">{selectedMovie.Name}</h2>
-
-                {/* Rating chip */}
-                {selectedMovie.rating && (
-                  <div className="modal-rating">
-                    {/* ICON: star — modal rating chip */}
-                    <img src={ICONS.star} alt="" className="icon-sm" />
-                    {selectedMovie.rating.toFixed(1)}
-                    <span style={{ opacity: 0.5, fontWeight: 400, fontSize: "0.75rem" }}> / 10</span>
-                  </div>
-                )}
-
-                {/* Genres */}
-                {selectedMovie.genres?.length > 0 && (
-                  <div className="modal-genre-row">
-                    {selectedMovie.genres.map(genre => (
-                      <span key={genre} className="badge">{genre}</span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Synopsis */}
-                {selectedMovie.overview && (
-                  <>
-                    <div className="modal-divider" />
-                    <div className="modal-section-label">Synopsis</div>
-                    <p className="modal-overview">{selectedMovie.overview}</p>
-                  </>
-                )}
-
-                {/* Where to Watch */}
-                {selectedMovie.providers?.length > 0 && (
-                  <>
-                    <div className="modal-divider" />
-                    <div className="modal-section-label">Where to Watch</div>
-                    <div className="providers-row">
-                      {selectedMovie.providers.map(provider => (
-                        <span key={provider} className="badge">{provider}</span>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MovieModal
+        movie={selectedMovie}
+        onClose={() => setSelectedMovie(null)}
+        onMarkWatched={handleMarkWatched}
+        onRemove={handleRemove}
+      />
     </>
   );
 }

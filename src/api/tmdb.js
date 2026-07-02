@@ -10,6 +10,26 @@ export async function getPopularMovies() {
   return data.results;
 }
 
+// Multi-result search used by the navbar search bar — returns a short list
+// of candidate movies for the user to pick from, rather than a single guess.
+export async function searchMovies(query) {
+  if (!query?.trim()) return [];
+
+  const response = await fetch(
+    `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}`
+  );
+
+  const data = await response.json();
+
+  return (data.results || []).slice(0, 8).map((movie) => ({
+    tmdbId: movie.id,
+    title: movie.title,
+    year: movie.release_date ? movie.release_date.slice(0, 4) : "",
+    posterPath: movie.poster_path,
+    rating: movie.vote_average,
+  }));
+}
+
 export async function searchMovie(title, year) {
   const response = await fetch(
     `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(title)}`
