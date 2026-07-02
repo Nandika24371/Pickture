@@ -112,7 +112,7 @@ src/
 
 5. **Run the app**
    ```bash
-   npm start
+   npm run dev
    ```
 
 ---
