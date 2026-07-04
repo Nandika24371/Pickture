@@ -1,4 +1,4 @@
-const API_KEY = "b666641cd77d685416127493ceda63ac";
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 export async function getPopularMovies() {
   const response = await fetch(

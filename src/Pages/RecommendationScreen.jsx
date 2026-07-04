@@ -18,6 +18,9 @@ const lengthLabels = {
   any: "Any length",
 };
 
+// How many recently-shown movies to avoid repeating in a row.
+const RECENT_HISTORY_SIZE = 10;
+
 function RecommendationScreen() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,7 +29,7 @@ function RecommendationScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
-  const selectedPlatforms = location.state?.selectedPlatforms || [];
+  const [recentRecommendations, setRecentRecommendations] = useState([]);
 
   async function loadMovies() {
     const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
@@ -36,161 +39,125 @@ function RecommendationScreen() {
   }
 
   function getMoodScore(movie, mood) {
-  if (mood === "any") return 0;
+    if (mood === "any") return 0;
 
-  let score = 0;
-
-  const genres = movie.genreIds || [];
+    let score = 0;
+    const genres = movie.genreIds || [];
 
     switch (mood) {
-
       case "fun":
-        if (genres.includes(35)) score += 3;   // Comedy
-        if (genres.includes(12)) score += 2;   // Adventure
-        if (genres.includes(16)) score += 2;   // Animation
+        if (genres.includes(35)) score += 3;    // Comedy
+        if (genres.includes(12)) score += 2;    // Adventure
+        if (genres.includes(16)) score += 2;    // Animation
         if (genres.includes(10751)) score += 2; // Family
         if (genres.includes(10402)) score += 1; // Music
         break;
 
       case "serious":
-        if (genres.includes(18)) score += 3;   // Drama
-        if (genres.includes(80)) score += 2;   // Crime
-        if (genres.includes(36)) score += 2;   // History
+        if (genres.includes(18)) score += 3;    // Drama
+        if (genres.includes(80)) score += 2;    // Crime
+        if (genres.includes(36)) score += 2;    // History
         if (genres.includes(10752)) score += 2; // War
-        if (genres.includes(9648)) score += 1; // Mystery
+        if (genres.includes(9648)) score += 1;  // Mystery
         break;
 
       case "emotional":
-        if (genres.includes(18)) score += 3;   // Drama
+        if (genres.includes(18)) score += 3;    // Drama
         if (genres.includes(10749)) score += 3; // Romance
         if (genres.includes(10751)) score += 1; // Family
-        if (genres.includes(36)) score += 1;   // History
+        if (genres.includes(36)) score += 1;    // History
         break;
     }
 
     return score;
   }
 
+  // Picks a movie from `movies` according to the quiz filters, avoiding
+  // anything shown in the last RECENT_HISTORY_SIZE picks where possible.
+  // Also records the pick into recentRecommendations — this is the ONLY
+  // place that updates that history, so every caller gets consistent behavior.
   function pickRandom(movies) {
-    const {
-      mood,
-      length,
-      region,
-      selectedPlatforms = []
-    } = location.state || {};
+    const { mood, length, region, selectedPlatforms = [] } = location.state || {};
 
     let pool = [...movies];
 
-    //mood filter
+    // Mood filter
     if (mood && mood !== "any") {
-
       pool = pool
-        .map(movie => ({
-          ...movie,
-          moodScore: getMoodScore(movie, mood)
-        }))
+        .map(movie => ({ ...movie, moodScore: getMoodScore(movie, mood) }))
         .sort((a, b) => b.moodScore - a.moodScore);
-
     }
 
     // Length filtering
-
     if (length === "short") {
-      pool = pool.filter(
-        m => m.runtime && m.runtime < 90
-      );
+      pool = pool.filter(m => m.runtime && m.runtime < 90);
     }
-
     if (length === "medium") {
-      pool = pool.filter(
-        m =>
-          m.runtime >= 90 &&
-          m.runtime <= 120
-      );
+      pool = pool.filter(m => m.runtime >= 90 && m.runtime <= 120);
     }
-
     if (length === "long") {
-      pool = pool.filter(
-        m => m.runtime > 120
-      );
+      pool = pool.filter(m => m.runtime > 120);
     }
 
     // Region filtering
-
     if (region === "english") {
-      pool = pool.filter(
-        m => m.originalLanguage === "en"
-      );
+      pool = pool.filter(m => m.originalLanguage === "en");
     }
-
     if (region === "hindi") {
-      pool = pool.filter(
-        m => m.originalLanguage === "hi"
-      );
+      pool = pool.filter(m => m.originalLanguage === "hi");
     }
-
     if (region === "eastAsian") {
-      pool = pool.filter(
-        m =>
-          ["ja", "ko", "zh", "th"]
-            .includes(m.originalLanguage)
-      );
+      pool = pool.filter(m => ["ja", "ko", "zh", "th"].includes(m.originalLanguage));
     }
-
     if (region === "international") {
-      pool = pool.filter(
-        m => m.originalLanguage !== "en"
-      );
+      pool = pool.filter(m => m.originalLanguage !== "en");
     }
 
     // Streaming platform filtering
-
     if (selectedPlatforms.length > 0) {
-
       pool = pool.filter(movie =>
-
-        selectedPlatforms.some(
-          platform =>
-            movie.providers?.includes(
-              platform
-            )
-        )
-
+        selectedPlatforms.some(platform => movie.providers?.includes(platform))
       );
-
     }
 
-    // Fallback
-
+    // Fallback if the filters left nothing
     if (pool.length === 0) {
       pool = movies;
     }
-
     if (pool.length === 0) return null;
 
-    const topPool =
-      mood && mood !== "any"
-        ? pool.slice(0, Math.min(10, pool.length))
-        : pool;
+    // Avoid recently shown movies where possible
+    let availablePool = pool.filter(
+      movie => !recentRecommendations.includes(movie.tmdbId)
+    );
 
-    return topPool[
-      Math.floor(Math.random() * topPool.length)
-    ];
+    // If we've exhausted the pool, allow repeats again
+    if (availablePool.length === 0) {
+      availablePool = pool;
+    }
+
+    const selected = availablePool[Math.floor(Math.random() * availablePool.length)];
+
+    setRecentRecommendations(prev =>
+      [...prev, selected.tmdbId].slice(-RECENT_HISTORY_SIZE)
+    );
+
+    return selected;
   }
 
   useEffect(() => {
     loadMovies().then(movies => {
-      if (movies.length > 0) setRecommendation(pickRandom(movies));
+      if (movies.length > 0) {
+        setRecommendation(pickRandom(movies));
+      }
       setLoading(false);
     });
   }, []);
 
   const handleSuggestAnother = () => {
     setActionMessage("");
-
-    if (allMovies.length > 0) {
-      setRecommendation(pickRandom(allMovies));
-    }
+    if (allMovies.length === 0) return;
+    setRecommendation(pickRandom(allMovies));
   };
 
   async function handleMarkWatched() {
@@ -283,30 +250,30 @@ function RecommendationScreen() {
             )}
 
             {recommendation.overview && (
-  <div style={{ marginBottom: "1.5rem" }}>
-    <div
-      style={{
-        fontSize: "0.72rem",
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        color: "var(--cream-muted)",
-        marginBottom: "0.5rem"
-      }}
-    >
-      Summary
-    </div>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div
+                  style={{
+                    fontSize: "0.72rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--cream-muted)",
+                    marginBottom: "0.5rem"
+                  }}
+                >
+                  Summary
+                </div>
 
-    <p
-      style={{
-        color: "var(--cream-dim)",
-        lineHeight: 1.7,
-        fontSize: "0.9rem"
-      }}
-    >
-      {recommendation.overview}
-    </p>
-  </div>
-)}
+                <p
+                  style={{
+                    color: "var(--cream-dim)",
+                    lineHeight: 1.7,
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  {recommendation.overview}
+                </p>
+              </div>
+            )}
 
             {recommendation.providers?.length > 0 && (
               <div style={{ marginBottom: "1.5rem" }}>
@@ -318,8 +285,6 @@ function RecommendationScreen() {
                 </div>
               </div>
             )}
-
-
 
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <button className="btn btn-outline" onClick={handleSuggestAnother} disabled={actionLoading}>
