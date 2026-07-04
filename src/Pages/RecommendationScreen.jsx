@@ -35,14 +35,63 @@ function RecommendationScreen() {
     return movies;
   }
 
+  function getMoodScore(movie, mood) {
+  if (mood === "any") return 0;
+
+  let score = 0;
+
+  const genres = movie.genreIds || [];
+
+    switch (mood) {
+
+      case "fun":
+        if (genres.includes(35)) score += 3;   // Comedy
+        if (genres.includes(12)) score += 2;   // Adventure
+        if (genres.includes(16)) score += 2;   // Animation
+        if (genres.includes(10751)) score += 2; // Family
+        if (genres.includes(10402)) score += 1; // Music
+        break;
+
+      case "serious":
+        if (genres.includes(18)) score += 3;   // Drama
+        if (genres.includes(80)) score += 2;   // Crime
+        if (genres.includes(36)) score += 2;   // History
+        if (genres.includes(10752)) score += 2; // War
+        if (genres.includes(9648)) score += 1; // Mystery
+        break;
+
+      case "emotional":
+        if (genres.includes(18)) score += 3;   // Drama
+        if (genres.includes(10749)) score += 3; // Romance
+        if (genres.includes(10751)) score += 1; // Family
+        if (genres.includes(36)) score += 1;   // History
+        break;
+    }
+
+    return score;
+  }
+
   function pickRandom(movies) {
     const {
+      mood,
       length,
       region,
       selectedPlatforms = []
     } = location.state || {};
 
     let pool = [...movies];
+
+    //mood filter
+    if (mood && mood !== "any") {
+
+      pool = pool
+        .map(movie => ({
+          ...movie,
+          moodScore: getMoodScore(movie, mood)
+        }))
+        .sort((a, b) => b.moodScore - a.moodScore);
+
+    }
 
     // Length filtering
 
@@ -119,10 +168,13 @@ function RecommendationScreen() {
 
     if (pool.length === 0) return null;
 
-    return pool[
-      Math.floor(
-        Math.random() * pool.length
-      )
+    const topPool =
+      mood && mood !== "any"
+        ? pool.slice(0, Math.min(10, pool.length))
+        : pool;
+
+    return topPool[
+      Math.floor(Math.random() * topPool.length)
     ];
   }
 
@@ -134,7 +186,11 @@ function RecommendationScreen() {
   }, []);
 
   const handleSuggestAnother = () => {
-    if (allMovies.length > 0) setRecommendation(pickRandom(allMovies));
+    setActionMessage("");
+
+    if (allMovies.length > 0) {
+      setRecommendation(pickRandom(allMovies));
+    }
   };
 
   async function handleMarkWatched() {

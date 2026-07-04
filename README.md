@@ -9,6 +9,14 @@ Pickture is a Letterboxd-inspired movie companion built with React, Firebase, an
 ### Authentication
 Email-based sign up / log in via Firebase Auth. Each user gets their own document in Firestore that records their watchlist, watched history, and stats.
 
+<p align="center">
+<img src="screenshots/welcome.png" width="750">
+</p>
+
+<p align="center">
+<img src="screenshots/login.png" width="750">
+</p>
+
 ### Profile
 - Concise Stats: films watched and films on watchlist.
 - **Import from Letterboxd**: upload a CSV export and every entry is displayed in watchlist view with poster, rating, runtime, genres, synopsis, original language, and streaming availability via TMDB.
